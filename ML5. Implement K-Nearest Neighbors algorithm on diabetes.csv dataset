@@ -1,0 +1,103 @@
+
+!pip install kagglehub
+
+import kagglehub
+import pandas as pd
+import numpy as np
+import os
+import glob
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import (
+    confusion_matrix,
+    accuracy_score,
+    precision_score,
+    recall_score
+)
+
+# 1. Load Dataset
+path = kagglehub.dataset_download("abdallamahgoub/diabetes")
+
+csv_files = glob.glob(os.path.join(path, "*.csv"))
+df = pd.read_csv(csv_files[0])
+
+print("Dataset Shape:", df.shape)
+print(df.head())
+
+# 2. Data Preprocessing
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+df.dropna(inplace=True)
+df.drop_duplicates(inplace=True)
+
+# Replace invalid zero values with median
+columns = [
+    'Glucose', 'BloodPressure',
+    'SkinThickness', 'Insulin', 'BMI'
+]
+
+for col in columns:
+    df[col] = df[col].replace(0, np.nan)
+    df[col] = df[col].fillna(df[col].median())
+
+# 3. Separate Features and Target
+X = df.drop('Outcome', axis=1)
+y = df['Outcome']
+
+# 4. Split Dataset
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# 5. Feature Scaling
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# 6. Apply KNN Algorithm
+knn = KNeighborsClassifier(n_neighbors=5)
+
+knn.fit(X_train, y_train)
+
+y_pred = knn.predict(X_test)
+
+# 7. Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
+
+print("\nConfusion Matrix:")
+print(cm)
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt='d',
+    cmap='Blues',
+    xticklabels=['No Diabetes', 'Diabetes'],
+    yticklabels=['No Diabetes', 'Diabetes']
+)
+
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("KNN Confusion Matrix")
+plt.show()
+
+# 8. Performance Evaluation
+accuracy = accuracy_score(y_test, y_pred)
+error_rate = 1 - accuracy
+precision = precision_score(y_test, y_pred, zero_division=0)
+recall = recall_score(y_test, y_pred, zero_division=0)
+
+print("\nModel Performance:")
+print("Accuracy:", round(accuracy, 4))
+print("Error Rate:", round(error_rate, 4))
+print("Precision:", round(precision, 4))
+print("Recall:", round(recall, 4))
