@@ -1,0 +1,70 @@
+import java.util.*;
+import java.util.Scanner;
+
+
+
+static int recursiveSteps = 0;
+static int iterativeSteps = 0;
+
+
+static int recursive(int n) {
+
+    recursiveSteps++;
+
+    if (n == 0)
+        return 0;
+
+    if (n == 1)
+        return 1;
+
+    return recursive(n - 1) + recursive(n - 2);
+}
+
+
+static void iterative(int n) {
+
+    int a = 0, b = 1;
+
+    for (int i = 0; i < n; i++) {
+
+        iterativeSteps++;
+
+        System.out.print(a + " ");
+
+        int c = a + b;
+        a = b;
+        b = c;
+    }
+}
+
+public static void main(String[] args) {
+
+    Scanner sc = new Scanner(System.in);
+
+    System.out.print("Enter number of terms: ");
+    int n = sc.nextInt();
+
+    if (n < 0) {
+        System.out.println("Enter a non-negative number.");
+        sc.close();
+        return;
+    }
+
+      
+    System.out.println("\nNon-Recursive Fibonacci:");
+    iterative(n);
+
+    System.out.println("\nIterative Step Count: " + iterativeSteps);
+
+       
+    System.out.println("\n\nRecursive Fibonacci:");
+
+    for (int i = 0; i < n; i++) {
+        System.out.print(recursive(i) + " ");
+    }
+
+    System.out.println("\nRecursive Step Count: " + recursiveSteps);
+
+    sc.close();
+}
+
