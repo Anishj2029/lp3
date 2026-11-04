@@ -1,6 +1,4 @@
 
-!pip install kagglehub
-
 import kagglehub
 import pandas as pd
 import numpy as np
@@ -10,47 +8,47 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import make_pipeline
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    confusion_matrix,
-    classification_report
-)
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping
 
 # 1. Load Dataset
 path = kagglehub.dataset_download(
-    "balaka18/email-spam-classification-dataset-csv"
+    "barelydedicated/bank-customer-churn-modeling"
 )
 
 csv_files = glob.glob(os.path.join(path, "*.csv"))
+
 df = pd.read_csv(csv_files[0])
 
 print("Dataset Shape:", df.shape)
 print(df.head())
 
 # 2. Data Preprocessing
+df.drop(
+    columns=['RowNumber', 'CustomerId', 'Surname'],
+    inplace=True,
+    errors='ignore'
+)
+
 df.dropna(inplace=True)
-df.drop_duplicates(inplace=True)
 
-print("\nMissing Values:", df.isnull().sum().sum())
+# Encode Categorical Columns
+df = pd.get_dummies(
+    df,
+    columns=['Geography', 'Gender'],
+    drop_first=True,
+    dtype=int
+)
 
-# Remove Email Number column
-df.drop(columns=['Email No.'], inplace=True, errors='ignore')
+# 3. Separate Features and Target
+X = df.drop('Exited', axis=1)
+y = df['Exited']
 
-# Separate Features and Target
-X = df.iloc[:, :-1]
-y = df.iloc[:, -1]
-
-print("\nTarget Classes:")
-print(y.value_counts())
-
-# 3. Split Dataset
+# 4. Split Dataset
 X_train, X_test, y_train, y_test = train_test_split(
     X, y,
     test_size=0.2,
@@ -58,90 +56,78 @@ X_train, X_test, y_train, y_test = train_test_split(
     stratify=y
 )
 
-# 4. K-Nearest Neighbors
-knn = make_pipeline(
-    StandardScaler(),
-    KNeighborsClassifier(n_neighbors=5)
+# 5. Normalize Data
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# 6. Build Neural Network Model
+model = Sequential([
+    Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+    Dropout(0.2),
+    Dense(32, activation='relu'),
+    Dropout(0.2),
+    Dense(1, activation='sigmoid')
+])
+
+model.compile(
+    optimizer='adam',
+    loss='binary_crossentropy',
+    metrics=['accuracy']
 )
 
-knn.fit(X_train, y_train)
-knn_pred = knn.predict(X_test)
-
-# 5. Support Vector Machine
-svm = make_pipeline(
-    StandardScaler(),
-    SVC(kernel='linear')
+# 7. Train Model with Improvement
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=5,
+    restore_best_weights=True
 )
 
-svm.fit(X_train, y_train)
-svm_pred = svm.predict(X_test)
-
-# 6. Model Evaluation
-def evaluate_model(name, actual, predicted):
-
-    print("\n", name)
-
-    print("Accuracy:", accuracy_score(actual, predicted))
-    print("Precision:", precision_score(actual, predicted, zero_division=0))
-    print("Recall:", recall_score(actual, predicted, zero_division=0))
-    print("F1 Score:", f1_score(actual, predicted, zero_division=0))
-
-    print("\nClassification Report:")
-    print(classification_report(actual, predicted, zero_division=0))
-
-    return [
-        accuracy_score(actual, predicted),
-        precision_score(actual, predicted, zero_division=0),
-        recall_score(actual, predicted, zero_division=0),
-        f1_score(actual, predicted, zero_division=0)
-    ]
-
-knn_scores = evaluate_model("KNN Classification", y_test, knn_pred)
-svm_scores = evaluate_model("SVM Classification", y_test, svm_pred)
-
-# 7. Compare Models
-results = pd.DataFrame(
-    [knn_scores, svm_scores],
-    columns=['Accuracy', 'Precision', 'Recall', 'F1 Score'],
-    index=['KNN', 'SVM']
+history = model.fit(
+    X_train,
+    y_train,
+    epochs=50,
+    batch_size=32,
+    validation_split=0.2,
+    callbacks=[early_stop],
+    verbose=1
 )
 
-print("\nModel Comparison:")
-print(results)
+# 8. Prediction
+y_pred = (model.predict(X_test) > 0.5).astype(int)
 
-# 8. Confusion Matrix
-fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+# 9. Accuracy
+accuracy = accuracy_score(y_test, y_pred)
+
+print("\nAccuracy:", round(accuracy * 100, 2), "%")
+
+# 10. Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
+
+print("\nConfusion Matrix:")
+print(cm)
 
 sns.heatmap(
-    confusion_matrix(y_test, knn_pred),
+    cm,
     annot=True,
     fmt='d',
     cmap='Blues',
-    ax=axes[0]
+    xticklabels=['Stay', 'Exit'],
+    yticklabels=['Stay', 'Exit']
 )
-axes[0].set_title("KNN Confusion Matrix")
-axes[0].set_xlabel("Predicted")
-axes[0].set_ylabel("Actual")
 
-sns.heatmap(
-    confusion_matrix(y_test, svm_pred),
-    annot=True,
-    fmt='d',
-    cmap='Greens',
-    ax=axes[1]
-)
-axes[1].set_title("SVM Confusion Matrix")
-axes[1].set_xlabel("Predicted")
-axes[1].set_ylabel("Actual")
-
-plt.tight_layout()
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("Bank Customer Churn Confusion Matrix")
 plt.show()
 
-# 9. Performance Comparison Graph
-results.plot(kind='bar', figsize=(9, 5))
+# 11. Accuracy Graph
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
 
-plt.title("KNN vs SVM Performance")
-plt.ylabel("Score")
-plt.xticks(rotation=0)
-plt.tight_layout()
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.title("Model Accuracy")
+plt.legend()
 plt.show()
