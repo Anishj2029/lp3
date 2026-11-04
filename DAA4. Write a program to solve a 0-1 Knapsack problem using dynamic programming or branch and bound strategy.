@@ -1,0 +1,61 @@
+
+import java.util.Scanner;
+
+public class Knapsack {
+
+    public static void main(String[] args) {
+
+        Scanner sc = new Scanner(System.in);
+
+        int[] weight = {10, 20, 30};
+        int[] profit = {60, 100, 120};
+
+        int n = weight.length;
+        int capacity = 50;
+
+    
+        int[][] dp = new int[n + 1][capacity + 1];
+
+     
+        for (int i = 1; i <= n; i++) {
+
+            for (int w = 0; w <= capacity; w++) {
+
+                if (weight[i - 1] <= w) {
+
+                    dp[i][w] = Math.max(
+                        profit[i - 1] +
+                        dp[i - 1][w - weight[i - 1]],
+
+                        dp[i - 1][w]
+                    );
+
+                } else {
+
+                    dp[i][w] = dp[i - 1][w];
+                }
+            }
+        }
+
+        System.out.println(
+            "Maximum Profit: " + dp[n][capacity]
+        );
+
+       
+        int w = capacity;
+
+        System.out.println("Selected Items:");
+
+        for (int i = n; i > 0; i--) {
+
+            if (dp[i][w] != dp[i - 1][w]) {
+
+                System.out.println("Item " + i);
+
+                w = w - weight[i - 1];
+            }
+        }
+
+        sc.close();
+    }
+}
