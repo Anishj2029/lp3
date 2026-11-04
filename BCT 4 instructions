@@ -1,0 +1,48 @@
+Procedure / Steps
+1. Open Remix IDE at https://remix.ethereum.org.
+
+2. Open File Explorer and create a new Solidity file named StudentData.sol.
+
+3. Write the Solidity program using the following constructs:
+- Structure: To store student details such as roll number, name, age and course.
+- Array: To store multiple student records.
+- Fallback: To execute when an unknown function is called or ETH is sent with unmatched data.
+4. Open the Solidity Compiler tab.
+
+5. Select Solidity compiler version 0.8.20 or a compatible version and click Compile StudentData.sol.
+
+6. After successful compilation, open the Deploy & Run Transactions tab.
+
+7. Select Remix VM (Prague) as the execution environment.
+
+8. Select StudentData from the contract dropdown and click Deploy.
+
+9. After successful deployment, expand the contract under Deployed Contracts.
+
+10. Use the addStudent() function to add student details.
+
+    Example:
+Parameter	Value
+Roll No	101
+Name	Rahul
+Age	25
+Course	BCT
+
+11. Click Transact to store the student record on the blockchain.
+
+12. Repeat the addStudent() operation to add another student.
+
+13. Use getStudentCount() to display the total number of students stored in the array.
+
+14. Use getStudent(index) or students(index) to retrieve student details using the array index.
+
+15. Test the fallback function by sending a transaction with unmatched function data. Set the Value to 0 Wei and use the low-level transaction interface to call the contract with unmatched data.
+
+16. Observe the transaction details in the Transaction Recorder.
+
+17. Click the transaction details to observe:
+- Gas Limit
+- Gas Used
+- Gas Price
+- Transaction Fee
+18. Record the observed gas values and transaction fees in the practical journal.
