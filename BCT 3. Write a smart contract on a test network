@@ -2,91 +2,29 @@
 pragma solidity ^0.8.20;
 
 contract BankAccount {
-    // Mapping to track the balance of each account holder
-    mapping(address => uint256) private balances;
+    uint256 private balance;
 
-    // Events for logging transactions on the blockchain
-    event Deposit(address indexed accountHolder, uint256 amount);
-    event Withdraw(address indexed accountHolder, uint256 amount);
+    event Deposit(address account, uint256 amount);
+    event Withdrawal(address account, uint256 amount);
 
-    /**
-     * @notice Allows a user to deposit Ether into their bank account.
-     * The deposited amount (msg.value in Wei) is added to the caller's balance.
-     */
     function deposit() public payable {
         require(msg.value > 0, "Deposit amount must be greater than zero");
-        balances[msg.sender] += msg.value;
+        balance += msg.value;
         emit Deposit(msg.sender, msg.value);
     }
 
-    /**
-     * @notice Allows a user to withdraw a specified amount of Ether from their account.
-     * @param _amount The amount in Wei to withdraw.
-     */
-    function withdraw(uint256 _amount) public {
-        require(_amount > 0, "Withdrawal amount must be greater than zero");
-        require(balances[msg.sender] >= _amount, "Insufficient balance");
-        
-        // Deduct balance prior to transfer to prevent re-entrancy attacks
-        balances[msg.sender] -= _amount;
-        
-        // Transfer Ether to the caller
-        payable(msg.sender).transfer(_amount);
-        emit Withdraw(msg.sender, _amount);
+    function withdraw(uint256 amount) public {
+        require(amount > 0, "Amount must be greater than zero");
+        require(amount <= balance, "Insufficient balance");
+
+        balance -= amount;
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Withdrawal failed");
+
+        emit Withdrawal(msg.sender, amount);
     }
 
-    /**
-     * @notice Returns the current balance of the caller.
-     * @return Balance in Wei.
-     */
     function showBalance() public view returns (uint256) {
-        return balances[msg.sender];
+        return balance;
     }
 }
-/* 
-================================================================================
-REMIX IDE NAVIGATION & DEMONSTRATION WORKFLOW (BCT-3: BankAccount)
-================================================================================
-1. WORKSPACE SETUP & CODE ENTRY:
-   - Open https://remix.ethereum.org
-   - Under 'File Explorer', create a new file named `BankAccount.sol`.
-   - Paste the contract code into the editor.
-
-2. COMPILATION:
-   - Navigate to the 'Solidity Compiler' tab (left sidebar icon).
-   - Select Compiler Version: `0.8.20` (or matching pragma).
-   - Click "Compile BankAccount.sol". Ensure a green checkmark appears.
-
-3. DEPLOYMENT (Remix VM / Sepolia):
-   - Navigate to the 'Deploy & Run Transactions' tab.
-   - Set 'Environment' to:
-     * Option A: `Remix VM (Cancun / Shanghai)` for local instant testing.
-     * Option B: `Injected Provider - MetaMask` (select Sepolia network in MetaMask).
-   - Ensure 'Contract' dropdown shows `BankAccount - BankAccount.sol`.
-   - Click the orange "Deploy" button.
-   - Confirm the transaction in the console (or MetaMask popup).
-
-4. FUNCTION DEMONSTRATION:
-   Under 'Deployed Contracts' -> expand `BankAccount`:
-   
-   A. DEPOSIT:
-      - Go to the 'VALUE' input box at the top of the Deploy panel.
-      - Enter `1` and set unit to `Ether` (or `1000000000000000000 Wei`).
-      - Click the red/payable `deposit` button.
-      - Observe the transaction log:
-        * Event emitted: Deposit(accountHolder, 1000000000000000000)
-        * Gas Used / Execution Cost.
-
-   B. SHOW BALANCE:
-      - Click the blue `showBalance` button.
-      - Terminal / button output shows: `uint256: 1000000000000000000` (1 ETH in Wei).
-
-   C. WITHDRAW:
-      - In the `withdraw` input field, enter `500000000000000000` (0.5 ETH in Wei).
-      - Set the top 'VALUE' box back to `0`.
-      - Click the orange `withdraw` button.
-      - Observe the log:
-        * Event emitted: Withdraw(accountHolder, 500000000000000000)
-      - Click `showBalance` again to verify remaining balance: `500000000000000000` Wei.
-================================================================================
-*/
