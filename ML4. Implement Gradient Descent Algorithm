@@ -1,0 +1,35 @@
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+def function(x):
+    return (x + 3)**2
+
+def gradient(x):
+    return 2 * (x + 3)
+
+x = 2
+learning_rate = 0.1
+iterations = 100
+
+x_values = []
+
+for i in range(iterations):
+    x_values.append(x)
+    x = x - learning_rate * gradient(x)
+
+print("Local Minimum x:", x)
+print("Minimum y:", function(x))
+
+x_range = np.linspace(-5, 4, 100)
+y_range = function(x_range)
+
+plt.plot(x_range, y_range, label="y = (x+3)^2")
+plt.scatter(x_values, [function(i) for i in x_values],
+            color='red', label="Gradient Descent")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.title("Gradient Descent")
+plt.legend()
+plt.grid()
+plt.show()
