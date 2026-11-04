@@ -1,0 +1,38 @@
+BCT Practical 3 – Bank Account Smart Contract Using Solidity
+Aim: To write and deploy a Solidity smart contract for a customer bank account that supports depositing money, withdrawing money and checking the account balance.
+Steps / Procedure
+1. Open the Remix IDE by visiting https://remix.ethereum.org.
+
+2. Open the File Explorer and create a new Solidity file named BankAccount.sol.
+
+3. Write the Solidity smart contract code to implement the following functions:
+- deposit() – To deposit ETH into the bank account.
+- withdraw(uint256 amount) – To withdraw the specified amount.
+- showBalance() – To display the current account balance.
+4. Click on the Solidity Compiler icon in the left sidebar.
+
+5. Select a compatible Solidity compiler version (0.8.20 or newer compatible 0.8.x version) and click Compile BankAccount.sol.
+
+6. After successful compilation, open the Deploy & Run Transactions tab.
+
+7. Select Remix VM (Prague) as the execution environment.
+
+8. Select BankAccount from the contract dropdown and click the Deploy button.
+
+9. After successful deployment, locate the contract under Deployed Contracts.
+
+10. To deposit money:
+- Enter 1 in the Value field.
+- Select Ether as the unit.
+- Click the deposit() button.
+- Wait for the transaction to complete successfully.
+11. To check the deposited balance, click the showBalance() button. The output should be 1000000000000000000 Wei, equivalent to 1 ETH.
+
+12. To withdraw money:
+- Enter 500000000000000000 in the withdraw() input field.
+- Set the Value field to 0 Wei.
+- Click the withdraw button.
+- Wait for the transaction to complete successfully.
+13. Click the showBalance() button again to verify the remaining contract balance.
+
+14. Observe the transaction status and final balance in Remix IDE.
