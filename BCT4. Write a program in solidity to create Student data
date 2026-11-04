@@ -1,159 +1,48 @@
+
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20; 
+pragma solidity ^0.8.20;
 
-contract StudentRegister { 
-    // Contract deployer/owner
-    address public owner; 
+contract StudentData {
 
-    // 1. Structure definition for Student
-    struct Student { 
-        uint256 studentId; 
-        string name; 
-        uint256[] marks; // 2. Dynamic Array for subject marks 
-        uint256 percentage; 
-        bool exist; 
+    struct Student {
+        uint256 rollNo;
+        string name;
+        uint256 age;
+        string course;
     }
 
-    // Mapping from Student ID to Student record
-    mapping(uint256 => Student) private students; 
+    Student[] public students;
 
-    // Events for logging
-    event StudentRegistered(uint256 indexed studentId, string name, uint256 percentage); 
-    event FallbackCalled(address sender, uint256 value, bytes data); 
+    event StudentAdded(uint256 rollNo, string name);
+    event FallbackCalled(address sender, uint256 amount);
 
-    modifier onlyOwner() { 
-        require(msg.sender == owner, "Unauthorized: Only the contract owner can perform this action."); 
-        _; 
+    function addStudent(
+        uint256 _rollNo,
+        string memory _name,
+        uint256 _age,
+        string memory _course
+    ) public {
+        students.push(Student(_rollNo, _name, _age, _course));
+        emit StudentAdded(_rollNo, _name);
     }
 
-    constructor() payable { 
-        owner = msg.sender; 
-    }
-
-    /**
-     * @notice Registers a student record with their 3 subject marks.
-     * @param _studentId Unique student identifier.
-     * @param _name Student full name.
-     * @param _marks Array containing marks of exactly 3 subjects.
-     */
-    function register( 
-        uint256 _studentId, 
-        string memory _name, 
-        uint256[] memory _marks 
-    ) public onlyOwner returns (uint256) { 
-        require(!students[_studentId].exist, "Student data already exists."); 
-        require(_marks.length == 3, "Only 3 subjects are allowed. Array length must be 3."); 
-        
-        uint256 totalMarks = getArraySum(_marks); 
-        uint256 percentage = totalMarks / 3; 
-        
-        students[_studentId] = Student({ 
-            studentId: _studentId, 
-            name: _name, 
-            marks: _marks, 
-            percentage: percentage, 
-            exist: true 
-        }); 
-        
-        emit StudentRegistered(_studentId, _name, percentage); 
-        return percentage; 
-    }
-
-    /**
-     * @notice Retrieves the stored student details.
-     * @param _studentId The student ID to query.
-     */
-    function getStudentDetails(uint256 _studentId) 
-        public 
-        view 
-        returns ( 
-            uint256 studentId, 
-            string memory name, 
-            uint256[] memory marks, 
-            uint256 percentage 
-        )
+    function getStudent(uint256 index)
+        public
+        view
+        returns (uint256, string memory, uint256, string memory)
     {
-        require(students[_studentId].exist, "No student data available for this ID."); 
-        Student memory s = students[_studentId]; 
-        return (s.studentId, s.name, s.marks, s.percentage); 
+        require(index < students.length, "Invalid student index");
+
+        Student memory s = students[index];
+
+        return (s.rollNo, s.name, s.age, s.course);
     }
 
-    /**
-     * @notice Internal helper function to sum up an array of marks.
-     */
-    function getArraySum(uint256[] memory array) private pure returns (uint256 sum) { 
-        sum = 0; 
-        for (uint256 i = 0; i < array.length; i++) { 
-            require(array[i] <= 100, "Marks must be between 0 and 100."); 
-            sum += array[i]; 
-        }
-        return sum; 
+    function getStudentCount() public view returns (uint256) {
+        return students.length;
     }
 
-    // 3. Fallback function: Executed when a non-existent function is invoked or arbitrary data is sent
-    fallback() external payable { 
-        emit FallbackCalled(msg.sender, msg.value, msg.data); 
-    }
-
-    // Receive function: Handles direct Ether transfers with empty calldata
-    receive() external payable { 
-        emit FallbackCalled(msg.sender, msg.value, ""); 
+    fallback() external payable {
+        emit FallbackCalled(msg.sender, msg.value);
     }
 }
-/* 
-================================================================================
-REMIX IDE NAVIGATION & DEMONSTRATION WORKFLOW (BCT-4: StudentRegister)
-================================================================================
-1. WORKSPACE SETUP & CODE ENTRY:
-   - Open https://remix.ethereum.org
-   - Under 'File Explorer', create a file named `StudentRegister.sol`.
-   - Paste the contract code containing Structure, Array, and Fallback.
-
-2. COMPILATION:
-   - Navigate to the 'Solidity Compiler' tab.
-   - Choose Compiler: `0.8.20`.
-   - Click "Compile StudentRegister.sol". Verify successful compilation.
-
-3. DEPLOYMENT:
-   - Open 'Deploy & Run Transactions' tab.
-   - Choose Environment: `Remix VM` or `Injected Provider - MetaMask`.
-   - Click "Deploy".
-   - Note the deployment receipt in the console:
-     * Transaction Cost & Execution Gas for deploying the contract.
-
-4. FUNCTION DEMONSTRATION:
-   Under 'Deployed Contracts' -> expand `StudentRegister`:
-
-   A. REGISTER STUDENT (Structure & Array):
-      - Expand the `register` function input fields:
-        * `_studentId`: 101
-        * `_name`: "John Doe"
-        * `_marks`: [85, 90, 75]
-      - Click "Transact".
-      - Expand the console receipt to record:
-        * Gas Used: ~100,000 - 130,000 gas
-        * Event emitted: StudentRegistered(101, "John Doe", 83)
-
-   B. GET STUDENT DETAILS:
-      - In `getStudentDetails`, enter `_studentId`: 101
-      - Click the blue "Call" button.
-      - Observe the retrieved tuple:
-        * studentId: 101
-        * name: John Doe
-        * marks: [85, 90, 75]
-        * percentage: 83
-
-   C. TEST FALLBACK / RECEIVE (Gas & Fee Observation):
-      - Scroll down to the 'Low level interactions' section at the bottom of the panel.
-      - Case 1 (receive):
-        * Set 'VALUE' to `100000000000000000` Wei (0.1 ETH).
-        * Leave 'CALLDATA' empty.
-        * Click "Transact".
-        * Triggers `receive()` function. Note the gas consumed.
-      - Case 2 (fallback):
-        * Enter random hex data in 'CALLDATA': `0x12345678`.
-        * Click "Transact".
-        * Triggers `fallback()` function.
-        * Observe `FallbackCalled` event log and transaction fee in the Remix terminal.
-================================================================================
-*/
