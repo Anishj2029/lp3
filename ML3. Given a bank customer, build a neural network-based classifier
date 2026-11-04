@@ -1,0 +1,147 @@
+
+!pip install kagglehub
+
+import kagglehub
+import pandas as pd
+import numpy as np
+import os
+import glob
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    classification_report
+)
+
+# 1. Load Dataset
+path = kagglehub.dataset_download(
+    "balaka18/email-spam-classification-dataset-csv"
+)
+
+csv_files = glob.glob(os.path.join(path, "*.csv"))
+df = pd.read_csv(csv_files[0])
+
+print("Dataset Shape:", df.shape)
+print(df.head())
+
+# 2. Data Preprocessing
+df.dropna(inplace=True)
+df.drop_duplicates(inplace=True)
+
+print("\nMissing Values:", df.isnull().sum().sum())
+
+# Remove Email Number column
+df.drop(columns=['Email No.'], inplace=True, errors='ignore')
+
+# Separate Features and Target
+X = df.iloc[:, :-1]
+y = df.iloc[:, -1]
+
+print("\nTarget Classes:")
+print(y.value_counts())
+
+# 3. Split Dataset
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# 4. K-Nearest Neighbors
+knn = make_pipeline(
+    StandardScaler(),
+    KNeighborsClassifier(n_neighbors=5)
+)
+
+knn.fit(X_train, y_train)
+knn_pred = knn.predict(X_test)
+
+# 5. Support Vector Machine
+svm = make_pipeline(
+    StandardScaler(),
+    SVC(kernel='linear')
+)
+
+svm.fit(X_train, y_train)
+svm_pred = svm.predict(X_test)
+
+# 6. Model Evaluation
+def evaluate_model(name, actual, predicted):
+
+    print("\n", name)
+
+    print("Accuracy:", accuracy_score(actual, predicted))
+    print("Precision:", precision_score(actual, predicted, zero_division=0))
+    print("Recall:", recall_score(actual, predicted, zero_division=0))
+    print("F1 Score:", f1_score(actual, predicted, zero_division=0))
+
+    print("\nClassification Report:")
+    print(classification_report(actual, predicted, zero_division=0))
+
+    return [
+        accuracy_score(actual, predicted),
+        precision_score(actual, predicted, zero_division=0),
+        recall_score(actual, predicted, zero_division=0),
+        f1_score(actual, predicted, zero_division=0)
+    ]
+
+knn_scores = evaluate_model("KNN Classification", y_test, knn_pred)
+svm_scores = evaluate_model("SVM Classification", y_test, svm_pred)
+
+# 7. Compare Models
+results = pd.DataFrame(
+    [knn_scores, svm_scores],
+    columns=['Accuracy', 'Precision', 'Recall', 'F1 Score'],
+    index=['KNN', 'SVM']
+)
+
+print("\nModel Comparison:")
+print(results)
+
+# 8. Confusion Matrix
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+sns.heatmap(
+    confusion_matrix(y_test, knn_pred),
+    annot=True,
+    fmt='d',
+    cmap='Blues',
+    ax=axes[0]
+)
+axes[0].set_title("KNN Confusion Matrix")
+axes[0].set_xlabel("Predicted")
+axes[0].set_ylabel("Actual")
+
+sns.heatmap(
+    confusion_matrix(y_test, svm_pred),
+    annot=True,
+    fmt='d',
+    cmap='Greens',
+    ax=axes[1]
+)
+axes[1].set_title("SVM Confusion Matrix")
+axes[1].set_xlabel("Predicted")
+axes[1].set_ylabel("Actual")
+
+plt.tight_layout()
+plt.show()
+
+# 9. Performance Comparison Graph
+results.plot(kind='bar', figsize=(9, 5))
+
+plt.title("KNN vs SVM Performance")
+plt.ylabel("Score")
+plt.xticks(rotation=0)
+plt.tight_layout()
+plt.show()
